@@ -1,0 +1,97 @@
+name: CI / CD — Lightstorm ITPMO
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: lightstorm-itpmo
+  AZURE_RESOURCE_GROUP: lightstorm-rg
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ── Stage 1: CI ────────────────────────────────────────────────────────────
+  ci:
+    name: Build & Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Validate syntax & imports
+        run: |
+          python -m py_compile app.py models.py config.py etom_data.py
+          echo "✅ Syntax check passed"
+
+      - name: Check no .env secrets committed
+        run: |
+          if grep -rE "(MAIL_PASSWORD|SECRET_KEY)\s*=\s*['\"][^'\"]{4,}" app.py config.py 2>/dev/null; then
+            echo "❌ Possible hardcoded secret found — aborting"
+            exit 1
+          fi
+          echo "✅ No hardcoded secrets detected"
+
+  # ── Stage 2: Deploy (main branch only) ────────────────────────────────────
+  deploy:
+    name: Deploy to Azure
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create deployment zip
+        run: |
+          zip -r deploy.zip . \
+            --exclude "*.db" \
+            --exclude "venv/*" \
+            --exclude ".git/*" \
+            --exclude "instance/*" \
+            --exclude "static/uploads/*" \
+            --exclude "__pycache__/*" \
+            --exclude "*.pyc" \
+            --exclude ".env"
+          echo "📦 Deployment zip: $(du -sh deploy.zip | cut -f1)"
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          resource-group-name: ${{ env.AZURE_RESOURCE_GROUP }}
+          package: deploy.zip
+
+      - name: Health check
+        run: |
+          echo "⏳ Waiting for app to warm up..."
+          sleep 20
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/health)
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Health check passed (HTTP $STATUS)"
+          else
+            echo "❌ Health check failed (HTTP $STATUS)"
+            exit 1
+          fi
+
+      - name: Logout from Azure
+        if: always()
+        run: az logout
