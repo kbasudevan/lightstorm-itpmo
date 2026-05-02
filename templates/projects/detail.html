@@ -1,0 +1,639 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }} — ITPMO{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="page-header-sm">
+  <div class="container-fluid px-4">
+    <nav aria-label="breadcrumb" class="mb-2">
+      <ol class="breadcrumb breadcrumb-dark mb-0" style="--bs-breadcrumb-divider-color:#94A3B8">
+        <li class="breadcrumb-item"><a href="{{ url_for('projects') }}" class="text-secondary">Projects</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('domain_view', id=project.domain_id) }}" class="text-secondary">{{ project.domain.name }}</a></li>
+        <li class="breadcrumb-item active text-white">{{ project.name|truncate(40) }}</li>
+      </ol>
+    </nav>
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+          <span class="status-badge status-{{ project.status }}">
+            <i class="bi {{ STATUS_MAP[project.status].icon }}"></i>
+            {{ STATUS_MAP[project.status].label }}
+          </span>
+          <span class="badge-domain" style="background:{{ project.domain.color }}22;border-color:{{ project.domain.color }}44;color:{{ project.domain.color }}">
+            <i class="{{ project.domain.icon }}"></i> {{ project.domain.name }}
+          </span>
+        </div>
+        <h3 class="fw-bold mb-1 text-white">{{ project.name }}</h3>
+        {% if project.description %}
+        <p class="text-secondary mb-0" style="max-width:600px">{{ project.description }}</p>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('project_edit', id=project.id) }}" class="btn btn-outline-light btn-sm">
+          <i class="bi bi-pencil me-1"></i>Edit
+        </a>
+        <button class="btn btn-warning btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#statusModal">
+          <i class="bi bi-arrow-left-right me-1"></i>Change Status
+        </button>
+        {% if current_user.role == 'admin' %}
+        <form method="post" action="{{ url_for('project_delete', id=project.id) }}"
+              data-confirm="Delete project '{{ project.name }}'? This cannot be undone.">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid px-4 py-4">
+  <div class="row g-4">
+
+    <!-- LEFT COLUMN -->
+    <div class="col-lg-8">
+
+      <!-- Tab nav -->
+      <ul class="nav nav-tabs mb-4" id="projectTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabOverview" type="button">
+            <i class="bi bi-grid me-1"></i>Overview
+          </button>
+        </li>
+        {% if current_user.email == PRIVILEGED_MAPPER_EMAIL %}
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabAudit" type="button">
+            <i class="bi bi-clock-history me-1"></i>Audit Trail
+            {% if field_audit %}<span class="badge bg-secondary ms-1">{{ field_audit|length }}</span>{% endif %}
+          </button>
+        </li>
+        {% endif %}
+      </ul>
+
+      <div class="tab-content">
+      <div class="tab-pane fade show active" id="tabOverview" role="tabpanel">
+
+      <!-- Project Details -->
+      <div class="ls-card mb-4">
+        <div class="ls-card-header">
+          <h5><i class="bi bi-info-circle me-2 text-primary"></i>Project Details</h5>
+        </div>
+        <div class="ls-card-body">
+          <div class="row g-4">
+            <div class="col-md-6">
+              <p class="section-header">Stakeholders</p>
+              <table class="w-100" style="border-collapse:collapse">
+                {% macro row(label, val) %}
+                {% if val %}
+                <tr>
+                  <td class="text-muted small py-1 pe-3" style="white-space:nowrap;width:45%">{{ label }}</td>
+                  <td class="fw-semibold small py-1">{{ val }}</td>
+                </tr>
+                {% endif %}
+                {% endmacro %}
+                {{ row('Business Sponsor', project.business_sponsor) }}
+                {{ row('Business Owner', project.business_owner) }}
+                {{ row('IT Owner', project.it_owner) }}
+                {{ row('Vendor / Partner', project.vendor_partner) }}
+              </table>
+              {% if not (project.business_sponsor or project.business_owner or project.it_owner or project.vendor_partner) %}
+              <p class="text-muted small">No stakeholders defined.</p>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <p class="section-header">Timeline &amp; Budget</p>
+              <table class="w-100" style="border-collapse:collapse">
+                {% macro drow(label, val) %}
+                {% if val %}
+                <tr>
+                  <td class="text-muted small py-1 pe-3" style="white-space:nowrap;width:55%">{{ label }}</td>
+                  <td class="fw-semibold small py-1">{{ val.strftime('%d %b %Y') }}</td>
+                </tr>
+                {% endif %}
+                {% endmacro %}
+                {{ drow('Est. Start', project.estimated_start) }}
+                {{ drow('Est. End', project.estimated_end) }}
+                {{ drow('Revised Start', project.revised_start) }}
+                {{ drow('Revised End', project.revised_end) }}
+                {% if project.cost %}
+                <tr>
+                  <td class="text-muted small py-1 pe-3">Project Cost</td>
+                  <td class="fw-semibold small py-1 text-success">${{ '{:,.0f}'.format(project.cost) }}</td>
+                </tr>
+                {% endif %}
+              </table>
+              {% if not (project.estimated_start or project.estimated_end or project.cost) %}
+              <p class="text-muted small">No timeline or budget defined.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Functional Requirements -->
+      {% if project.functional_requirements %}
+      <div class="ls-card mb-4">
+        <div class="ls-card-header">
+          <h5><i class="bi bi-file-text me-2 text-primary"></i>Functional Requirements</h5>
+        </div>
+        <div class="ls-card-body">
+          <div style="white-space:pre-wrap;font-size:.9rem;line-height:1.7;color:var(--ls-text)">{{ project.functional_requirements }}</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Process Compliance -->
+      <div class="ls-card mb-4">
+        <div class="ls-card-header">
+          <h5><i class="bi bi-diagram-3 me-2 text-primary"></i>eTOM Process Compliance
+            <span class="badge bg-secondary ms-2">{{ project.process_mappings|length }}</span>
+          </h5>
+          <div class="d-flex gap-2">
+            <form method="post" action="{{ url_for('project_auto_map', id=project.id) }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-success" title="Auto-map eTOM processes based on project attributes">
+                <i class="bi bi-magic me-1"></i>Auto-map eTOM
+              </button>
+            </form>
+            {% if current_user.email == PRIVILEGED_MAPPER_EMAIL %}
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#processMapModal">
+              <i class="bi bi-plus-lg me-1"></i>Map Process
+            </button>
+            {% endif %}
+          </div>
+        </div>
+        <div class="ls-card-body p-0">
+          {% if project.process_mappings %}
+          <table class="table table-ls mb-0">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Process</th>
+                <th>Compliance</th>
+                <th>Notes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pp in project.process_mappings %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('process_detail', code=pp.process.code) }}"
+                     class="text-decoration-none fw-mono small"
+                     style="color:{{ pp.process.color }}">
+                    {{ pp.process.code }}
+                  </a>
+                </td>
+                <td class="small">{{ pp.process.name }}</td>
+                <td>
+                  <span class="badge rounded-pill"
+                        style="background:{{ COMPLIANCE_MAP[pp.compliance_status].color }}20;
+                               color:{{ COMPLIANCE_MAP[pp.compliance_status].color }};
+                               border:1px solid {{ COMPLIANCE_MAP[pp.compliance_status].color }}40;
+                               font-weight:500">
+                    <i class="bi {{ COMPLIANCE_MAP[pp.compliance_status].icon }} me-1"></i>
+                    {{ COMPLIANCE_MAP[pp.compliance_status].label }}
+                  </span>
+                </td>
+                <td class="text-muted small">{{ pp.notes or '—' }}</td>
+                <td class="text-end">
+                  <div class="d-flex gap-1 justify-content-end align-items-center">
+                    {% if pp.auto_mapped %}
+                    <span class="badge" style="background:#0EA5E920;color:#0EA5E9;border:1px solid #0EA5E940;font-size:.65rem">
+                      <i class="bi bi-magic me-1"></i>Auto
+                    </span>
+                    {% endif %}
+                    {% if current_user.email == PRIVILEGED_MAPPER_EMAIL %}
+                    <button class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2"
+                            data-bs-toggle="modal"
+                            data-bs-target="#updateStatusModal{{ pp.id }}"
+                            title="Update compliance status">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <form method="post"
+                          action="{{ url_for('project_process_remove', id=project.id, pp_id=pp.id) }}"
+                          data-confirm="Remove process mapping for '{{ pp.process.name }}'?">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="btn btn-xs btn-outline-danger btn-sm py-0 px-2" title="Remove">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="empty-state py-4">
+            <i class="bi bi-diagram-3 d-block mb-2" style="font-size:1.8rem"></i>
+            <p class="small text-muted mb-1">No eTOM processes mapped yet.</p>
+            <button class="btn btn-sm btn-primary mt-1" data-bs-toggle="modal" data-bs-target="#processMapModal">
+              <i class="bi bi-plus-lg me-1"></i>Map a Process
+            </button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Attachments -->
+      <div class="ls-card mb-4">
+        <div class="ls-card-header">
+          <h5><i class="bi bi-paperclip me-2 text-primary"></i>Attachments
+            <span class="badge bg-secondary ms-2">{{ project.attachments|length }}</span>
+          </h5>
+          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            <i class="bi bi-upload me-1"></i>Upload
+          </button>
+        </div>
+        <div class="ls-card-body p-0">
+          {% if project.attachments %}
+          <table class="table table-ls mb-0">
+            <thead>
+              <tr>
+                <th>File Name</th>
+                <th>Size</th>
+                <th>Uploaded By</th>
+                <th>Date</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for att in project.attachments %}
+              <tr>
+                <td>
+                  <i class="bi bi-file-earmark me-2 text-muted"></i>
+                  {{ att.original_filename }}
+                </td>
+                <td class="text-muted">{{ att.file_size | fmt_bytes }}</td>
+                <td class="text-muted">{{ att.uploader.username }}</td>
+                <td class="text-muted">{{ att.uploaded_at.strftime('%d %b %Y') }}</td>
+                <td>
+                  <a href="{{ url_for('project_download', id=project.id, att_id=att.id) }}"
+                     class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2">
+                    <i class="bi bi-download"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="empty-state py-4">
+            <i class="bi bi-paperclip d-block mb-2" style="font-size:1.8rem"></i>
+            <p class="small text-muted mb-0">No attachments yet. Click Upload to add files.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      </div>{# /tabOverview #}
+
+      {% if current_user.email == PRIVILEGED_MAPPER_EMAIL %}
+      <div class="tab-pane fade" id="tabAudit" role="tabpanel">
+        <div class="ls-card">
+          <div class="ls-card-header">
+            <h5><i class="bi bi-clock-history me-2 text-primary"></i>Field Change Audit
+              <span class="badge bg-secondary ms-2">{{ field_audit|length }}</span>
+            </h5>
+          </div>
+          <div class="ls-card-body p-0">
+            {% if field_audit %}
+            <table class="table table-ls mb-0">
+              <thead>
+                <tr>
+                  <th>Date &amp; Time</th>
+                  <th>User</th>
+                  <th>Action</th>
+                  <th>Field</th>
+                  <th>From</th>
+                  <th>To</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for entry in field_audit %}
+                <tr>
+                  <td class="text-muted small">{{ entry.changed_at.strftime('%d %b %Y, %H:%M') }}</td>
+                  <td class="small fw-semibold">{{ entry.changer.username }}</td>
+                  <td>
+                    {% if entry.action == 'created' %}
+                    <span class="badge rounded-pill" style="background:#10B98120;color:#10B981;border:1px solid #10B98140">Created</span>
+                    {% else %}
+                    <span class="badge rounded-pill" style="background:#3B82F620;color:#3B82F6;border:1px solid #3B82F640">Updated</span>
+                    {% endif %}
+                  </td>
+                  <td class="small fw-semibold">{{ entry.field_label }}</td>
+                  <td class="text-muted small">{{ entry.old_value or '—' }}</td>
+                  <td class="small">
+                    <span class="fw-semibold" style="color:var(--ls-accent)">{{ entry.new_value or '—' }}</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state py-4">
+              <i class="bi bi-clock-history d-block mb-2" style="font-size:1.8rem"></i>
+              <p class="small text-muted mb-0">No field changes recorded yet.</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      </div>{# /tab-content #}
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-lg-4">
+
+      <!-- Maturity / Status card -->
+      <div class="ls-card mb-4">
+        <div class="ls-card-header">
+          <h5><i class="bi bi-bar-chart-steps me-2 text-primary"></i>Maturity Level</h5>
+        </div>
+        <div class="ls-card-body text-center">
+          <div class="mb-2">
+            <span class="status-badge status-{{ project.status }}" style="font-size:.9rem;padding:.5rem 1.25rem">
+              <i class="bi {{ STATUS_MAP[project.status].icon }} me-2"></i>
+              {{ STATUS_MAP[project.status].label }}
+            </span>
+          </div>
+          <div class="text-muted small mb-3">Stage {{ STATUS_MATURITY[project.status] }} of 7</div>
+          <div class="progress mb-2" style="height:10px;border-radius:5px">
+            <div class="progress-bar" role="progressbar"
+                 style="width:{{ (STATUS_MATURITY[project.status] / 7 * 100)|int }}%;background:{{ STATUS_MAP[project.status].color }}">
+            </div>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="adoption-label">Ideation</span>
+            <span class="adoption-label">Phased Out</span>
+          </div>
+          <hr>
+          <div class="row g-2 text-start">
+            <div class="col-6">
+              <div class="text-muted small">Created</div>
+              <div class="fw-semibold small">{{ project.created_at.strftime('%d %b %Y') }}</div>
+            </div>
+            <div class="col-6">
+              <div class="text-muted small">Updated</div>
+              <div class="fw-semibold small">{{ project.updated_at.strftime('%d %b %Y') }}</div>
+            </div>
+            <div class="col-12">
+              <div class="text-muted small">Created By</div>
+              <div class="fw-semibold small">{{ project.creator.username }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status History -->
+      <div class="ls-card">
+        <div class="ls-card-header">
+          <h5><i class="bi bi-clock-history me-2 text-primary"></i>History</h5>
+        </div>
+        <div class="ls-card-body">
+          {% if audit_logs %}
+          <div class="timeline">
+            {% for log in audit_logs %}
+            <div class="timeline-item">
+              <div class="timeline-dot
+                {% if log.action == 'status_change' %}bg-primary text-white border-primary
+                {% elif log.action == 'created' %}bg-success text-white border-success
+                {% elif log.action == 'attachment_added' %}bg-info text-white border-info
+                {% else %}bg-secondary text-white border-secondary{% endif %}">
+                <i class="bi
+                  {% if log.action == 'status_change' %}bi-arrow-left-right
+                  {% elif log.action == 'created' %}bi-plus
+                  {% elif log.action == 'attachment_added' %}bi-paperclip
+                  {% else %}bi-pencil{% endif %}"></i>
+              </div>
+              <div class="timeline-title">
+                {% if log.action == 'status_change' %}
+                  Status changed
+                  {% if log.old_status %}
+                  <span class="status-badge status-{{ log.old_status }}" style="font-size:.6rem;padding:.1rem .4rem">
+                    {{ STATUS_MAP[log.old_status].label }}
+                  </span>
+                  →
+                  {% endif %}
+                  <span class="status-badge status-{{ log.new_status }}" style="font-size:.6rem;padding:.1rem .4rem">
+                    {{ STATUS_MAP[log.new_status].label }}
+                  </span>
+                {% elif log.action == 'created' %}
+                  Project created
+                {% elif log.action == 'attachment_added' %}
+                  File attached
+                {% else %}
+                  Details updated
+                {% endif %}
+              </div>
+              <div class="timeline-time">
+                by {{ log.user.username }} · {{ log.changed_at.strftime('%d %b %Y, %H:%M') }}
+              </div>
+              {% if log.notes %}
+              <div class="timeline-body">{{ log.notes }}</div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0">No history available.</p>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ====== Change Status Modal ====== -->
+<div class="modal fade" id="statusModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('project_change_status', id=project.id) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-arrow-left-right me-2 text-primary"></i>Change Project Status</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">New Status</label>
+            <select name="status" class="form-select" required>
+              {% for key, label, color, icon in STATUSES %}
+              <option value="{{ key }}" {% if project.status == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Notes <span class="text-muted small">(optional)</span></label>
+            <textarea name="notes" class="form-control" rows="3"
+                      placeholder="Reason for status change…"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary fw-semibold">
+            <i class="bi bi-check2 me-1"></i>Update Status
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Upload Modal ====== -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('project_upload', id=project.id) }}" enctype="multipart/form-data">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-upload me-2 text-primary"></i>Upload Attachment</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label">Select File</label>
+          <input type="file" name="file" id="fileInput" class="form-control" required>
+          <p class="text-muted small mt-2">
+            Allowed: PDF, Word, Excel, PowerPoint, images, ZIP, CSV &mdash; Max 16 MB
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary fw-semibold">
+            <i class="bi bi-upload me-1"></i>Upload
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Map Process Modal ====== -->
+<div class="modal fade" id="processMapModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('project_process_map', id=project.id) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-diagram-3 me-2 text-primary"></i>Map eTOM Process</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label fw-semibold">Process Area (L2)</label>
+              <select id="l2Select" class="form-select" onchange="populateL3(this.value)">
+                <option value="">— Select L2 area —</option>
+                {% for l2 in l2_list %}
+                <option value="{{ l2.code }}">{{ l2.code }} — {{ l2.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-7">
+              <label class="form-label fw-semibold">Specific Process (L3) <span class="text-danger">*</span></label>
+              <select id="l3Select" name="process_id" class="form-select" required>
+                <option value="">— Select L2 first —</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Compliance Status</label>
+              <select name="compliance_status" class="form-select">
+                {% for key, label, color, icon in COMPLIANCE_STATUSES %}
+                <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Notes <span class="text-muted small">(optional)</span></label>
+              <input type="text" name="notes" class="form-control" placeholder="Brief notes…">
+            </div>
+          </div>
+          <p class="text-muted small mt-3 mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            Browse the full process hierarchy under the
+            <a href="{{ url_for('processes') }}" target="_blank">Processes tab</a>.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary fw-semibold">
+            <i class="bi bi-plus-lg me-1"></i>Map Process
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Per-mapping Update Status Modals ====== -->
+{% if current_user.email == PRIVILEGED_MAPPER_EMAIL %}
+{% for pp in project.process_mappings %}
+<div class="modal fade" id="updateStatusModal{{ pp.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('project_process_status', id=project.id, pp_id=pp.id) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">
+            <i class="bi bi-pencil me-2 text-primary"></i>Update Compliance
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3">
+            <span class="fw-semibold text-body">{{ pp.process.code }}</span> — {{ pp.process.name }}
+          </p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Compliance Status</label>
+            <select name="compliance_status" class="form-select">
+              {% for key, label, color, icon in COMPLIANCE_STATUSES %}
+              <option value="{{ key }}" {% if pp.compliance_status == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Notes <span class="text-muted small">(optional)</span></label>
+            <textarea name="notes" class="form-control" rows="2"
+                      placeholder="Update notes…">{{ pp.notes or '' }}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary fw-semibold">
+            <i class="bi bi-check2 me-1"></i>Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CASCADE_DATA = {{ cascade_json | safe }};
+
+function populateL3(l2code) {
+  const sel = document.getElementById('l3Select');
+  sel.innerHTML = '<option value="">— Select process —</option>';
+  if (!l2code || !CASCADE_DATA[l2code]) return;
+  CASCADE_DATA[l2code].children.forEach(function(p) {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.code + ' — ' + p.name;
+    sel.appendChild(opt);
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Projects — ITPMO{% endblock %}
+
+{% block content %}
+<div class="page-header-sm">
+  <div class="container-fluid px-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <h3 class="fw-bold mb-1 text-white"><i class="bi bi-folder2-open me-2"></i>All Projects</h3>
+        <p class="text-secondary mb-0 small">
+          {{ projects|length }} project{% if projects|length != 1 %}s{% endif %} found
+        </p>
+      </div>
+      <a href="{{ url_for('project_new') }}" class="btn btn-warning fw-semibold">
+        <i class="bi bi-plus-circle-fill me-2"></i>New Project
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid px-4 py-4">
+  <!-- Filters -->
+  <form method="get" class="ls-card p-3 mb-4">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label mb-1 small fw-semibold">Search</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control" value="{{ search }}" placeholder="Name, owner…">
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label mb-1 small fw-semibold">Domain</label>
+        <select name="domain" class="form-select form-select-sm">
+          <option value="">All Domains</option>
+          {% for d in domains %}
+          <option value="{{ d.id }}" {% if domain_filter == d.id|string %}selected{% endif %}>
+            {{ d.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label mb-1 small fw-semibold">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All Statuses</option>
+          {% for key, label, color, icon in STATUSES %}
+          <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+          <i class="bi bi-funnel-fill me-1"></i>Filter
+        </button>
+        {% if search or domain_filter or status_filter %}
+        <a href="{{ url_for('projects') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-x-lg"></i>
+        </a>
+        {% endif %}
+      </div>
+      {% if current_user.role == 'admin' %}
+      <div class="col-12 d-flex justify-content-end">
+        <a href="{{ url_for('admin_export_projects', domain=domain_filter, status=status_filter) }}"
+           class="btn btn-success btn-sm">
+          <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+          Export{% if domain_filter or status_filter %} Filtered{% endif %} to CSV
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Project list -->
+  {% if projects %}
+  <div class="row g-3">
+    {% for p in projects %}
+    <div class="col-12 col-md-6 col-xl-4">
+      <a href="{{ url_for('project_detail', id=p.id) }}" class="project-card d-block"
+         style="--domain-color:{{ p.domain.color }}">
+        <div class="d-flex align-items-start justify-content-between mb-2">
+          <span class="badge-domain">
+            <i class="{{ p.domain.icon }}" style="color:{{ p.domain.color }}"></i>
+            {{ p.domain.name|truncate(22) }}
+          </span>
+          <span class="status-badge status-{{ p.status }}">
+            <i class="bi {{ STATUS_MAP[p.status].icon }}"></i>
+            {{ STATUS_MAP[p.status].label }}
+          </span>
+        </div>
+        <div class="project-title">{{ p.name }}</div>
+        {% if p.description %}
+        <p class="text-muted small mb-2 mt-1" style="line-height:1.4">
+          {{ p.description|truncate(90) }}
+        </p>
+        {% endif %}
+        <div class="project-meta d-flex gap-3 flex-wrap mt-2 pt-2 border-top">
+          {% if p.it_owner %}
+          <span><i class="bi bi-person-gear me-1"></i>{{ p.it_owner }}</span>
+          {% endif %}
+          {% if p.estimated_end %}
+          <span><i class="bi bi-calendar3 me-1"></i>Due {{ p.estimated_end.strftime('%b %Y') }}</span>
+          {% endif %}
+          {% if p.cost %}
+          <span><i class="bi bi-currency-dollar me-1"></i>{{ '${:,.0f}'.format(p.cost) }}</span>
+          {% endif %}
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state ls-card">
+    <i class="bi bi-folder2 d-block mb-3"></i>
+    <h5>No Projects Found</h5>
+    <p class="text-muted">Try adjusting your filters or
+      <a href="{{ url_for('project_new') }}">create a new project</a>.
+    </p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

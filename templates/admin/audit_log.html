@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Audit Log — ITPMO Admin{% endblock %}
+
+{% block content %}
+<div class="page-header-sm">
+  <div class="container-fluid px-4">
+    <h3 class="fw-bold text-white mb-0">
+      <i class="bi bi-journal-text me-2"></i>Full Audit Log
+    </h3>
+    <p class="text-secondary mb-0 small">Complete change history for all projects</p>
+  </div>
+</div>
+
+<div class="container-fluid px-4 py-4">
+  <!-- Filters -->
+  <form method="get" class="ls-card p-3 mb-4">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label mb-1 small fw-semibold">Project</label>
+        <select name="project_id" class="form-select form-select-sm">
+          <option value="">All Projects</option>
+          {% for p in all_projects %}
+          <option value="{{ p.id }}" {% if project_filter == p.id|string %}selected{% endif %}>
+            {{ p.name|truncate(50) }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label mb-1 small fw-semibold">Action Type</label>
+        <select name="action" class="form-select form-select-sm">
+          <option value="">All Actions</option>
+          {% for a in actions %}
+          <option value="{{ a }}" {% if action_filter == a %}selected{% endif %}>
+            {{ a.replace('_',' ').title() }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+          <i class="bi bi-funnel-fill me-1"></i>Filter
+        </button>
+        {% if project_filter or action_filter %}
+        <a href="{{ url_for('admin_audit_log') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-x-lg"></i>
+        </a>
+        {% endif %}
+      </div>
+      <div class="col-md-2 text-end text-muted small pt-1">
+        Showing {{ logs.items|length }} of {{ logs.total }} entries
+      </div>
+    </div>
+  </form>
+
+  <!-- Log Table -->
+  <div class="ls-card">
+    <div class="ls-card-body p-0">
+      {% if logs.items %}
+      <div class="table-responsive">
+        <table class="table table-ls mb-0">
+          <thead>
+            <tr>
+              <th style="width:130px">Date / Time</th>
+              <th>Project</th>
+              <th style="width:150px">Action</th>
+              <th>User</th>
+              <th>Change Details</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in logs.items %}
+            <tr>
+              <td class="text-muted small">
+                {{ log.changed_at.strftime('%d %b %Y') }}<br>
+                <span style="font-size:.7rem">{{ log.changed_at.strftime('%H:%M:%S') }}</span>
+              </td>
+              <td>
+                <a href="{{ url_for('project_detail', id=log.project_id) }}"
+                   class="fw-semibold text-decoration-none small">
+                  {{ log.project_name|truncate(40) }}
+                </a>
+              </td>
+              <td>
+                <span class="badge
+                  {% if log.action == 'status_change' %}bg-primary
+                  {% elif log.action == 'created' %}bg-success
+                  {% elif log.action == 'attachment_added' %}bg-info
+                  {% else %}bg-secondary{% endif %}">
+                  <i class="bi
+                    {% if log.action == 'status_change' %}bi-arrow-left-right
+                    {% elif log.action == 'created' %}bi-plus
+                    {% elif log.action == 'attachment_added' %}bi-paperclip
+                    {% else %}bi-pencil{% endif %} me-1"></i>
+                  {{ log.action.replace('_',' ').title() }}
+                </span>
+              </td>
+              <td class="small text-muted">{{ log.user.username }}</td>
+              <td class="small">
+                {% if log.action == 'status_change' %}
+                  {% if log.old_status %}
+                  <span class="status-badge status-{{ log.old_status }}" style="font-size:.65rem;padding:.15rem .45rem">
+                    {{ STATUS_MAP[log.old_status].label }}
+                  </span>
+                  <i class="bi bi-arrow-right mx-1 text-muted"></i>
+                  {% endif %}
+                  <span class="status-badge status-{{ log.new_status }}" style="font-size:.65rem;padding:.15rem .45rem">
+                    {{ STATUS_MAP[log.new_status].label }}
+                  </span>
+                {% elif log.new_status %}
+                  <span class="status-badge status-{{ log.new_status }}" style="font-size:.65rem;padding:.15rem .45rem">
+                    {{ STATUS_MAP[log.new_status].label }}
+                  </span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="text-muted small">{{ log.notes|truncate(60) if log.notes else '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      {% if logs.pages > 1 %}
+      <div class="p-3 border-top d-flex justify-content-between align-items-center">
+        <span class="text-muted small">
+          Page {{ logs.page }} of {{ logs.pages }}
+        </span>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            {% if logs.has_prev %}
+            <li class="page-item">
+              <a class="page-link" href="{{ url_for('admin_audit_log', page=logs.prev_num, project_id=project_filter, action=action_filter) }}">
+                &laquo; Prev
+              </a>
+            </li>
+            {% endif %}
+            {% for p in logs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+              {% if p %}
+              <li class="page-item {% if p == logs.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('admin_audit_log', page=p, project_id=project_filter, action=action_filter) }}">{{ p }}</a>
+              </li>
+              {% else %}
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+              {% endif %}
+            {% endfor %}
+            {% if logs.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="{{ url_for('admin_audit_log', page=logs.next_num, project_id=project_filter, action=action_filter) }}">
+                Next &raquo;
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="empty-state py-5">
+        <i class="bi bi-journal d-block mb-3"></i>
+        <h5>No Log Entries Found</h5>
+        <p class="text-muted">Try adjusting the filters above.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

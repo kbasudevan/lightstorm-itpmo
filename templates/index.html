@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% block title %}ITPMO — IT Project Portfolio{% endblock %}
+
+{% block content %}
+
+<!-- ====== Hero ====== -->
+<div class="page-hero">
+  <div class="container-fluid px-4">
+    <div class="row align-items-center">
+      <div class="col-lg-8">
+        <!-- Lightstorm logo + org badge -->
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <img src="{{ url_for('static', filename='img/lightstorm-logo-white.webp') }}"
+               alt="Lightstorm" height="32"
+               style="mix-blend-mode:screen;object-fit:contain">
+          <span class="hero-org-badge">
+            Enterprise Architecture &amp; Product Engineering
+          </span>
+        </div>
+        <h1 class="hero-title">ITPMO</h1>
+        <p class="hero-subtitle">
+          IT Project Management Office &mdash; track innovation, delivery and adoption across all
+          strategic domains. From ideation to live: monitor maturity, manage stakeholders, and
+          drive transformation.
+        </p>
+      </div>
+      <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('project_new') }}" class="btn btn-warning fw-bold px-4 py-2">
+          <i class="bi bi-plus-circle-fill me-2"></i>New Project
+        </a>
+        <a href="{{ url_for('projects') }}" class="btn btn-outline-light ms-2 px-4 py-2">
+          Browse All
+        </a>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-warning fw-bold px-4 py-2">
+          <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid px-4 py-4">
+
+  <!-- ====== Stats Row ====== -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#EFF6FF">
+          <i class="bi bi-folder2-open" style="color:#2563EB"></i>
+        </div>
+        <div>
+          <div class="stat-value">{{ total_projects }}</div>
+          <div class="stat-label">Total Projects</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#D1FAE5">
+          <i class="bi bi-check-circle-fill" style="color:#059669"></i>
+        </div>
+        <div>
+          <div class="stat-value" style="color:#059669">{{ status_counts.live }}</div>
+          <div class="stat-label">Live</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FFEDD5">
+          <i class="bi bi-code-slash" style="color:#F97316"></i>
+        </div>
+        <div>
+          <div class="stat-value" style="color:#F97316">{{ status_counts.under_development }}</div>
+          <div class="stat-label">In Development</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FEF3C7">
+          <i class="bi bi-lightbulb" style="color:#D97706"></i>
+        </div>
+        <div>
+          <div class="stat-value" style="color:#D97706">{{ status_counts.ideation + status_counts.user_requirement + status_counts.incubation }}</div>
+          <div class="stat-label">In Pipeline</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== Maturity Pipeline ====== -->
+  <div class="ls-card mb-4">
+    <div class="ls-card-header">
+      <div>
+        <h5><i class="bi bi-diagram-3 me-2 text-primary"></i>Adoption &amp; Maturity Pipeline</h5>
+        <p class="text-muted small mb-0">Number of projects at each stage of the maturity journey</p>
+      </div>
+    </div>
+    <div class="ls-card-body">
+      <div class="maturity-pipeline">
+        {% for key, label, color, icon in STATUSES %}
+        {% set count = status_counts[key] %}
+        <div class="maturity-stage {% if count > 0 %}has-projects{% endif %}">
+          <div class="stage-bar" style="background:{{ color }}"></div>
+          <div class="stage-icon" style="color:{{ color }}"><i class="bi {{ icon }}"></i></div>
+          <div class="stage-count" style="color:{{ color }}">{{ count }}</div>
+          <div class="stage-label">{{ label }}</div>
+        </div>
+        {% if not loop.last %}
+        <div class="maturity-arrow"><i class="bi bi-chevron-right"></i></div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      <div class="mt-3 pt-3 border-top">
+        <div style="height:160px">
+          <canvas id="maturityChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- ====== Domain Cards ====== -->
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Strategic Domains</h5>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('projects') }}" class="btn btn-sm btn-outline-primary">View All</a>
+        {% endif %}
+      </div>
+
+      <div class="row g-3">
+        {% for ds in domain_stats %}
+        <div class="col-md-6">
+          {% if current_user.is_authenticated %}
+          <a href="{{ url_for('domain_view', id=ds.domain.id) }}"
+             class="domain-card text-decoration-none d-flex flex-column h-100"
+             style="--domain-color:{{ ds.domain.color }}">
+          {% else %}
+          <div class="domain-card" style="--domain-color:{{ ds.domain.color }}">
+          {% endif %}
+            <div class="d-flex align-items-start justify-content-between mb-2">
+              <div class="domain-icon-wrap" style="background:{{ ds.domain.color }}22">
+                <i class="{{ ds.domain.icon }}" style="color:{{ ds.domain.color }}"></i>
+              </div>
+              <span class="badge rounded-pill" style="background:{{ ds.domain.color }}22;color:{{ ds.domain.color }}">
+                {{ ds.total }} project{% if ds.total != 1 %}s{% endif %}
+              </span>
+            </div>
+            <div class="domain-card-title">{{ ds.domain.name }}</div>
+            <div class="domain-card-desc">{{ ds.domain.description }}</div>
+            <div class="d-flex gap-3 mt-auto pt-2 border-top">
+              <div class="text-center">
+                <div class="fw-bold" style="color:#059669;font-size:1.1rem">{{ ds.live }}</div>
+                <div class="adoption-label">Live</div>
+              </div>
+              <div class="text-center">
+                <div class="fw-bold" style="color:#F97316;font-size:1.1rem">{{ ds.in_progress }}</div>
+                <div class="adoption-label">In Progress</div>
+              </div>
+              <div class="ms-auto align-self-end">
+                {% if ds.total > 0 %}
+                <div class="progress" style="width:80px;height:6px;border-radius:3px">
+                  <div class="progress-bar" role="progressbar"
+                       style="width:{{ (ds.live / ds.total * 100)|int }}%;background:{{ ds.domain.color }}">
+                  </div>
+                </div>
+                <div class="adoption-label mt-1 text-end">
+                  {{ (ds.live / ds.total * 100)|int }}% live
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          {% if current_user.is_authenticated %}</a>{% else %}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ====== Recent Activity ====== -->
+    <div class="col-lg-4">
+      <div class="ls-card h-100">
+        <div class="ls-card-header">
+          <h5><i class="bi bi-activity me-2 text-primary"></i>Recent Activity</h5>
+        </div>
+        <div class="ls-card-body p-0">
+          {% if recent_activity %}
+          {% for log in recent_activity %}
+          <div class="activity-item px-4">
+            <div class="activity-dot
+              {% if log.action == 'status_change' %}bg-primary text-white
+              {% elif log.action == 'created' %}bg-success text-white
+              {% elif log.action == 'attachment_added' %}bg-info text-white
+              {% else %}bg-secondary text-white{% endif %}">
+              <i class="bi
+                {% if log.action == 'status_change' %}bi-arrow-left-right
+                {% elif log.action == 'created' %}bi-plus
+                {% elif log.action == 'attachment_added' %}bi-paperclip
+                {% else %}bi-pencil{% endif %}"></i>
+            </div>
+            <div class="flex-1">
+              <div class="activity-text">
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('project_detail', id=log.project_id) }}" class="fw-semibold text-decoration-none">
+                  {{ log.project_name|truncate(30) }}
+                </a>
+                {% else %}
+                <span class="fw-semibold">{{ log.project_name|truncate(30) }}</span>
+                {% endif %}
+                <br>
+                {% if log.action == 'status_change' %}
+                  <span class="text-muted">
+                    <span class="status-badge status-{{ log.old_status }}" style="font-size:.65rem;padding:.15rem .4rem">{{ STATUS_MAP[log.old_status].label }}</span>
+                    <i class="bi bi-arrow-right mx-1 text-muted"></i>
+                    <span class="status-badge status-{{ log.new_status }}" style="font-size:.65rem;padding:.15rem .4rem">{{ STATUS_MAP[log.new_status].label }}</span>
+                  </span>
+                {% elif log.action == 'created' %}
+                  <span class="text-success">Project created</span>
+                {% elif log.action == 'attachment_added' %}
+                  <span class="text-info">File uploaded</span>
+                {% else %}
+                  <span class="text-muted">Details updated</span>
+                {% endif %}
+              </div>
+              <div class="activity-time">{{ log.changed_at.strftime('%d %b %Y, %H:%M') }}</div>
+            </div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="empty-state py-4">
+            <i class="bi bi-clock-history d-block"></i>
+            <p class="small mb-0">No activity yet</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  buildMaturityChart('maturityChart',
+    {{ chart_labels | tojson }},
+    {{ chart_counts | tojson }},
+    {{ chart_colors | tojson }}
+  );
+</script>
+{% endblock %}

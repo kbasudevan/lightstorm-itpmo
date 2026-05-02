@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify your ITPMO account</title>
+</head>
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:'Segoe UI',Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:40px 16px">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background:linear-gradient(135deg,#0F172A,#1E3A5F);padding:36px 40px;border-radius:12px 12px 0 0">
+              <div style="color:#ffffff;font-size:22px;font-weight:700;letter-spacing:.5px">ITPMO</div>
+              <div style="color:#94A3B8;font-size:13px;margin-top:4px">IT Project Management Office · Lightstorm</div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background:#ffffff;padding:40px 40px 32px;border-left:1px solid #E2E8F0;border-right:1px solid #E2E8F0">
+              <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#0F172A">Hello, {{ username }} 👋</p>
+              <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6">
+                Thank you for registering. To activate your account and access the ITPMO project portfolio,
+                please verify your email address by clicking the button below.
+              </p>
+
+              <!-- CTA button -->
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px">
+                <tr>
+                  <td align="center" style="background:#2563EB;border-radius:8px">
+                    <a href="{{ verify_url }}"
+                       style="display:inline-block;padding:14px 36px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;letter-spacing:.3px">
+                      ✔ Verify My Email Address
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 8px;font-size:13px;color:#64748B;line-height:1.6">
+                If the button doesn't work, copy and paste this link into your browser:
+              </p>
+              <p style="margin:0 0 28px;word-break:break-all">
+                <a href="{{ verify_url }}" style="font-size:13px;color:#2563EB;text-decoration:none">{{ verify_url }}</a>
+              </p>
+
+              <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 24px">
+
+              <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6">
+                If you did not create an account with ITPMO, you can safely ignore this email.
+                No action is required.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background:#F8FAFC;padding:20px 40px;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 12px 12px">
+              <p style="margin:0;font-size:12px;color:#94A3B8">
+                © {{ current_year }} Lightstorm · IT Project Management Office<br>
+                This is an automated message — please do not reply directly to this email.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

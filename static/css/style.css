@@ -1,0 +1,675 @@
+/* ==========================================================================
+   Lightstorm IT Projects — Global Styles
+   ========================================================================== */
+
+:root {
+  --ls-navy:    #0F172A;
+  --ls-blue:    #2563EB;
+  --ls-amber:   #F59E0B;
+  --ls-bg:      #F1F5F9;
+  --ls-card:    #FFFFFF;
+  --ls-text:    #1E293B;
+  --ls-muted:   #64748B;
+  --ls-border:  #E2E8F0;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:  0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+  --shadow-lg:  0 10px 15px rgba(0,0,0,.08), 0 4px 6px rgba(0,0,0,.05);
+  --radius:     .75rem;
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+body {
+  background: var(--ls-bg);
+  color: var(--ls-text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main { flex: 1; }
+
+a { color: var(--ls-blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* --------------------------------------------------------------------------
+   Navbar
+   -------------------------------------------------------------------------- */
+.navbar {
+  background: var(--ls-navy) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  padding: .65rem 1.5rem;
+}
+
+.navbar-brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -.3px;
+  gap: .5rem;
+}
+
+/* Thin separator between logo and ITPMO label */
+.brand-divider {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,.25);
+  margin: 0 .15rem;
+  vertical-align: middle;
+}
+
+/* "ITPMO" pill next to logo */
+.itpmo-label {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.navbar .nav-link {
+  color: #CBD5E1 !important;
+  font-weight: 500;
+  padding: .4rem .75rem;
+  border-radius: .5rem;
+  transition: all .15s;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+  color: #fff !important;
+  background: rgba(255,255,255,.1);
+}
+
+.navbar .dropdown-menu {
+  border: 1px solid var(--ls-border);
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   Hero / Page headers
+   -------------------------------------------------------------------------- */
+.page-hero {
+  background: linear-gradient(135deg, var(--ls-navy) 0%, #1E3A5F 60%, #1D4ED8 100%);
+  color: #fff;
+  padding: 3.5rem 2rem 3rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -80px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(245,158,11,.15), transparent 70%);
+  pointer-events: none;
+}
+
+/* Org badge shown below the logo in the hero */
+.hero-org-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(245,158,11,.18);
+  color: #FCD34D;
+  font-size: .75rem;
+  font-weight: 600;
+  padding: .35rem .85rem;
+  border-radius: 99px;
+  letter-spacing: .03em;
+  border: 1px solid rgba(245,158,11,.25);
+}
+
+.hero-title {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  margin-bottom: .5rem;
+}
+
+.hero-subtitle {
+  font-size: 1.05rem;
+  color: #CBD5E1;
+  max-width: 600px;
+}
+
+.page-header-sm {
+  background: linear-gradient(135deg, var(--ls-navy), #1E3A5F);
+  color: #fff;
+  padding: 2rem 2rem 1.75rem;
+}
+
+/* --------------------------------------------------------------------------
+   Stat Cards
+   -------------------------------------------------------------------------- */
+.stat-card {
+  background: var(--ls-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem;
+  border: 1px solid var(--ls-border);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition: box-shadow .2s, transform .2s;
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ls-text);
+}
+
+.stat-label {
+  font-size: .8rem;
+  color: var(--ls-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-top: .2rem;
+}
+
+/* --------------------------------------------------------------------------
+   Maturity Pipeline
+   -------------------------------------------------------------------------- */
+.maturity-pipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: .5rem;
+}
+
+.maturity-stage {
+  flex: 1;
+  min-width: 110px;
+  background: var(--ls-card);
+  border: 1px solid var(--ls-border);
+  border-right: none;
+  padding: 1.25rem .75rem;
+  text-align: center;
+  position: relative;
+  transition: all .2s;
+  cursor: default;
+}
+
+.maturity-stage:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.maturity-stage:last-child  { border-right: 1px solid var(--ls-border); border-radius: 0 var(--radius) var(--radius) 0; }
+
+.maturity-stage:hover {
+  background: #F8FAFC;
+  z-index: 1;
+}
+
+.maturity-stage.has-projects {
+  background: #FAFBFF;
+}
+
+.stage-bar {
+  height: 4px;
+  border-radius: 2px;
+  margin-bottom: 1rem;
+}
+
+.stage-count {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: .35rem;
+}
+
+.stage-label {
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--ls-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  line-height: 1.3;
+}
+
+.stage-icon {
+  font-size: 1.3rem;
+  margin-bottom: .4rem;
+}
+
+.maturity-arrow {
+  display: flex;
+  align-items: center;
+  color: #CBD5E1;
+  font-size: 1.1rem;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Domain Cards
+   -------------------------------------------------------------------------- */
+.domain-card {
+  background: var(--ls-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--ls-border);
+  border-top: 4px solid var(--domain-color, #6B7280);
+  padding: 1.5rem;
+  transition: box-shadow .2s, transform .2s;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.domain-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  text-decoration: none;
+}
+
+.domain-icon-wrap {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.domain-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ls-text);
+  margin-bottom: .35rem;
+}
+
+.domain-card-desc {
+  font-size: .83rem;
+  color: var(--ls-muted);
+  flex: 1;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   Project Cards
+   -------------------------------------------------------------------------- */
+.project-card {
+  background: var(--ls-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--ls-border);
+  border-left: 4px solid var(--domain-color, #6B7280);
+  padding: 1.25rem 1.5rem;
+  transition: box-shadow .2s, transform .2s;
+  display: block;
+  color: inherit;
+}
+
+.project-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  text-decoration: none;
+  color: inherit;
+}
+
+.project-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ls-text);
+  margin-bottom: .25rem;
+}
+
+.project-meta {
+  font-size: .78rem;
+  color: var(--ls-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Status Badges
+   -------------------------------------------------------------------------- */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .28rem .75rem;
+  border-radius: 99px;
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.status-ideation               { background: #F1F5F9; color: #475569; }
+.status-user_requirement       { background: #DBEAFE; color: #1D4ED8; }
+.status-incubation             { background: #FEF3C7; color: #B45309; }
+.status-under_development      { background: #FFEDD5; color: #C2410C; }
+.status-live                   { background: #D1FAE5; color: #065F46; }
+.status-continuous_enhancement { background: #E0F2FE; color: #0369A1; }
+.status-phased_out             { background: #FEE2E2; color: #B91C1C; }
+
+/* --------------------------------------------------------------------------
+   Cards & Panels
+   -------------------------------------------------------------------------- */
+.ls-card {
+  background: var(--ls-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--ls-border);
+}
+
+.ls-card-header {
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid var(--ls-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ls-card-header h5,
+.ls-card-header h6 {
+  margin: 0;
+  font-weight: 700;
+  font-size: .95rem;
+}
+
+.ls-card-body { padding: 1.5rem; }
+
+/* --------------------------------------------------------------------------
+   Activity / Audit Timeline
+   -------------------------------------------------------------------------- */
+.timeline {
+  position: relative;
+  padding-left: 2.5rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: .9rem;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: var(--ls-border);
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 1.5rem;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -2.5rem;
+  top: .2rem;
+  width: 1.8rem; height: 1.8rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .75rem;
+  background: var(--ls-card);
+  border: 2px solid var(--ls-border);
+  z-index: 1;
+}
+
+.timeline-title {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--ls-text);
+}
+
+.timeline-time {
+  font-size: .75rem;
+  color: var(--ls-muted);
+}
+
+.timeline-body {
+  font-size: .82rem;
+  color: var(--ls-muted);
+  margin-top: .25rem;
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   Forms
+   -------------------------------------------------------------------------- */
+.form-label {
+  font-weight: 600;
+  font-size: .85rem;
+  color: var(--ls-text);
+  margin-bottom: .35rem;
+}
+
+.form-control, .form-select {
+  border-color: var(--ls-border);
+  border-radius: .5rem;
+  font-size: .9rem;
+  padding: .55rem .85rem;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--ls-blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+}
+
+.section-header {
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ls-muted);
+  padding: .5rem 0 .75rem;
+  border-bottom: 1px solid var(--ls-border);
+  margin-bottom: 1.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+.btn-ls-primary {
+  background: var(--ls-blue);
+  color: #fff;
+  border: none;
+  border-radius: .5rem;
+  padding: .55rem 1.25rem;
+  font-weight: 600;
+  font-size: .9rem;
+  transition: all .15s;
+}
+
+.btn-ls-primary:hover {
+  background: #1D4ED8;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37,99,235,.35);
+}
+
+/* --------------------------------------------------------------------------
+   Tables
+   -------------------------------------------------------------------------- */
+.table-ls th {
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--ls-muted);
+  background: #F8FAFC;
+  border-bottom: 1px solid var(--ls-border);
+  padding: .75rem 1rem;
+}
+
+.table-ls td {
+  padding: .85rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #F1F5F9;
+  font-size: .88rem;
+}
+
+.table-ls tr:last-child td { border-bottom: none; }
+
+/* --------------------------------------------------------------------------
+   Activity feed (homepage)
+   -------------------------------------------------------------------------- */
+.activity-item {
+  display: flex;
+  gap: .85rem;
+  padding: .75rem 0;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.activity-item:last-child { border-bottom: none; }
+
+.activity-dot {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .8rem;
+  flex-shrink: 0;
+  margin-top: .1rem;
+}
+
+.activity-text {
+  font-size: .85rem;
+  line-height: 1.45;
+}
+
+.activity-time {
+  font-size: .75rem;
+  color: var(--ls-muted);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Footer
+   -------------------------------------------------------------------------- */
+.footer {
+  background: #fff;
+  border-top: 1px solid var(--ls-border);
+  margin-top: 2rem;
+}
+
+/* --------------------------------------------------------------------------
+   Misc utilities
+   -------------------------------------------------------------------------- */
+.text-ls-muted { color: var(--ls-muted) !important; }
+.text-ls-navy  { color: var(--ls-navy)  !important; }
+
+.badge-domain {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .25rem .65rem;
+  border-radius: 99px;
+  font-size: .72rem;
+  font-weight: 700;
+  background: #F1F5F9;
+  color: var(--ls-text);
+  border: 1px solid var(--ls-border);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--ls-muted);
+}
+
+.empty-state i { font-size: 3rem; opacity: .35; margin-bottom: 1rem; }
+.empty-state h5 { color: var(--ls-text); margin-bottom: .5rem; }
+
+/* --------------------------------------------------------------------------
+   Adoption gauge labels
+   -------------------------------------------------------------------------- */
+.adoption-label {
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--ls-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Process / eTOM styles
+   -------------------------------------------------------------------------- */
+.process-l3-row {
+  transition: background .12s;
+}
+.process-l3-row:hover {
+  background: #F8FAFC;
+}
+.process-l3-row:last-child {
+  border-bottom: none !important;
+}
+
+/* Monospace code-like spans for eTOM codes */
+.fw-mono {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-weight: 600;
+}
+
+/* Accordion overrides for process browser */
+.accordion-item {
+  background: var(--ls-card);
+  border: 1px solid var(--ls-border) !important;
+}
+
+.accordion-button {
+  font-size: .9rem;
+  gap: .75rem;
+}
+
+.accordion-button:not(.collapsed) {
+  background: transparent;
+  box-shadow: none;
+}
+
+.accordion-button:focus {
+  box-shadow: none;
+}
+
+/* Compliance status pill (reusable across tables) */
+.compliance-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .2rem .65rem;
+  border-radius: 99px;
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   Footer
+   -------------------------------------------------------------------------- */
+.footer {
+  padding: 1.25rem 0;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive tweaks
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .hero-title { font-size: 1.75rem; }
+  .maturity-stage { min-width: 90px; }
+  .page-hero { padding: 2rem 1.25rem; }
+}

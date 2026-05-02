@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Flask / SQLite
+instance/
+*.db
+*.sqlite3
+
+# Uploads
+static/uploads/
+
+# Environment — contains secrets, never commit
+.env
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

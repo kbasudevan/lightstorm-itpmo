@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Local dev data (always use Docker volumes on server)
+instance/
+static/uploads/
+
+# Secrets — never bake into image
+.env
+
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Git
+.git/
+.gitignore

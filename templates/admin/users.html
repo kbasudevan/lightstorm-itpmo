@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}User Management — ITPMO Admin{% endblock %}
+
+{% block content %}
+<div class="page-header-sm">
+  <div class="container-fluid px-4">
+    <h3 class="fw-bold text-white mb-0">
+      <i class="bi bi-people me-2"></i>User Management
+    </h3>
+    <p class="text-secondary mb-0 small">{{ users|length }} registered user{% if users|length != 1 %}s{% endif %}</p>
+  </div>
+</div>
+
+<div class="container-fluid px-4 py-4">
+  <div class="ls-card">
+    <div class="ls-card-body p-0">
+      <table class="table table-ls mb-0">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Department</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <span class="d-inline-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
+                      style="width:32px;height:32px;font-size:.8rem;flex-shrink:0;
+                             background:{{ '#2563EB' if u.role == 'admin' else '#6B7280' }}">
+                  {{ u.username[0].upper() }}
+                </span>
+                <span class="fw-semibold">
+                  {{ u.username }}
+                  {% if u.id == current_user.id %}
+                  <span class="badge bg-secondary ms-1">You</span>
+                  {% endif %}
+                </span>
+              </div>
+            </td>
+            <td class="text-muted small">{{ u.email }}</td>
+            <td class="text-muted small">{{ u.department or '—' }}</td>
+            <td>
+              {% if u.role == 'admin' %}
+              <span class="badge bg-warning text-dark"><i class="bi bi-shield-check me-1"></i>Admin</span>
+              {% else %}
+              <span class="badge bg-secondary">User</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.is_active %}
+              <span class="badge bg-success"><i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>Active</span>
+              {% else %}
+              <span class="badge bg-danger">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ u.created_at.strftime('%d %b %Y') }}</td>
+            <td class="text-end">
+              <div class="d-flex gap-1 justify-content-end">
+                {% if u.id != current_user.id %}
+                <!-- Toggle Admin -->
+                <form method="post" action="{{ url_for('admin_toggle_admin', id=u.id) }}">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-xs btn-sm btn-outline-secondary py-0 px-2"
+                          data-bs-toggle="tooltip"
+                          title="{{ 'Revoke Admin' if u.role == 'admin' else 'Make Admin' }}">
+                    <i class="bi bi-shield{% if u.role == 'admin' %}-slash{% else %}-plus{% endif %}"></i>
+                  </button>
+                </form>
+                <!-- Toggle Active -->
+                <form method="post" action="{{ url_for('admin_toggle_active', id=u.id) }}">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit"
+                          class="btn btn-xs btn-sm py-0 px-2 {{ 'btn-outline-danger' if u.is_active else 'btn-outline-success' }}"
+                          data-bs-toggle="tooltip"
+                          title="{{ 'Deactivate' if u.is_active else 'Activate' }}">
+                    <i class="bi bi-{{ 'person-dash' if u.is_active else 'person-check' }}"></i>
+                  </button>
+                </form>
+                {% else %}
+                <span class="text-muted small fst-italic">Your account</span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="alert alert-info d-flex align-items-start gap-2 mt-4" style="font-size:.85rem">
+    <i class="bi bi-info-circle-fill mt-1 flex-shrink-0"></i>
+    <div>
+      New users can self-register at <a href="{{ url_for('register') }}">/register</a>.
+      The first registered account is automatically granted Admin privileges.
+      Deactivating a user prevents them from logging in without deleting their data.
+    </div>
+  </div>
+</div>
+{% endblock %}

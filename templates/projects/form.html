@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block title %}{% if project %}Edit {{ project.name }}{% else %}New Project{% endif %} — ITPMO{% endblock %}
+
+{% block content %}
+<div class="page-header-sm">
+  <div class="container-fluid px-4">
+    <nav aria-label="breadcrumb" class="mb-2">
+      <ol class="breadcrumb mb-0" style="--bs-breadcrumb-divider-color:#94A3B8">
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('projects') }}" class="text-secondary">Projects</a>
+        </li>
+        {% if project %}
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('project_detail', id=project.id) }}" class="text-secondary">
+            {{ project.name|truncate(30) }}
+          </a>
+        </li>
+        <li class="breadcrumb-item active text-white">Edit</li>
+        {% else %}
+        <li class="breadcrumb-item active text-white">New Project</li>
+        {% endif %}
+      </ol>
+    </nav>
+    <h3 class="fw-bold text-white mb-0">
+      {% if project %}
+      <i class="bi bi-pencil-square me-2"></i>Edit Project
+      {% else %}
+      <i class="bi bi-plus-circle-fill me-2"></i>Create New Project
+      {% endif %}
+    </h3>
+  </div>
+</div>
+
+<div class="container-fluid px-4 py-4" style="max-width:1000px">
+  <form method="post">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+    <!-- Section: Basic Info -->
+    <div class="ls-card mb-4">
+      <div class="ls-card-header">
+        <h5><i class="bi bi-info-circle me-2 text-primary"></i>Basic Information</h5>
+      </div>
+      <div class="ls-card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Project Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" required
+                   value="{{ project.name if project else '' }}"
+                   placeholder="e.g. CRM Modernisation Initiative">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Business Domain <span class="text-danger">*</span></label>
+            <select name="domain_id" class="form-select" required>
+              <option value="">Select business domain…</option>
+              {% for d in domains %}
+              <option value="{{ d.id }}"
+                {% if project and project.domain_id == d.id %}selected{% endif %}>
+                {{ d.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Technical Domain</label>
+            <select name="technical_domain" class="form-select">
+              <option value="">Select technical domain…</option>
+              {% for td in TECHNICAL_DOMAINS %}
+              <option value="{{ td }}"
+                {% if project and project.technical_domain == td %}selected{% endif %}>
+                {{ td }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Nature of Project</label>
+            <select name="project_nature" class="form-select">
+              <option value="">Select nature…</option>
+              {% for pn in PROJECT_NATURES %}
+              <option value="{{ pn }}"
+                {% if project and project.project_nature == pn %}selected{% endif %}>
+                {{ pn }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Project Status</label>
+            <select name="status" class="form-select">
+              {% for key, label, color, icon in STATUSES %}
+              <option value="{{ key }}"
+                {% if project and project.status == key %}selected
+                {% elif not project and key == 'ideation' %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if project %}
+          <div class="col-12">
+            <label class="form-label">Status Change Notes <span class="text-muted small">(only if changing status)</span></label>
+            <input type="text" name="status_notes" class="form-control"
+                   placeholder="Reason for status change…">
+          </div>
+          {% endif %}
+          <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="3"
+                      placeholder="Brief description of the project objective…">{{ project.description if project else '' }}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Stakeholders -->
+    <div class="ls-card mb-4">
+      <div class="ls-card-header">
+        <h5><i class="bi bi-people me-2 text-primary"></i>Stakeholders</h5>
+      </div>
+      <div class="ls-card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Business Sponsor</label>
+            <input type="text" name="business_sponsor" class="form-control"
+                   value="{{ project.business_sponsor or '' if project else '' }}"
+                   placeholder="Executive sponsor name">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Business Owner</label>
+            <input type="text" name="business_owner" class="form-control"
+                   value="{{ project.business_owner or '' if project else '' }}"
+                   placeholder="Business owner name">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">IT Owner</label>
+            <input type="text" name="it_owner" class="form-control"
+                   value="{{ project.it_owner or '' if project else '' }}"
+                   placeholder="IT lead / owner name">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Vendor / Partner</label>
+            <input type="text" name="vendor_partner" class="form-control"
+                   value="{{ project.vendor_partner or '' if project else '' }}"
+                   placeholder="Third-party vendor or partner">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Timeline & Budget -->
+    <div class="ls-card mb-4">
+      <div class="ls-card-header">
+        <h5><i class="bi bi-calendar3 me-2 text-primary"></i>Timeline &amp; Budget</h5>
+      </div>
+      <div class="ls-card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Est. Start Date</label>
+            <input type="date" name="estimated_start" class="form-control"
+                   value="{{ project.estimated_start.isoformat() if project and project.estimated_start else '' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Est. End Date</label>
+            <input type="date" name="estimated_end" class="form-control"
+                   value="{{ project.estimated_end.isoformat() if project and project.estimated_end else '' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Revised Start Date</label>
+            <input type="date" name="revised_start" class="form-control"
+                   value="{{ project.revised_start.isoformat() if project and project.revised_start else '' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Revised End Date</label>
+            <input type="date" name="revised_end" class="form-control"
+                   value="{{ project.revised_end.isoformat() if project and project.revised_end else '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Project Cost (USD)</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input type="number" name="cost" class="form-control" step="0.01" min="0"
+                     value="{{ project.cost if project and project.cost else '' }}"
+                     placeholder="0.00">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Functional Requirements -->
+    <div class="ls-card mb-4">
+      <div class="ls-card-header">
+        <h5><i class="bi bi-file-text me-2 text-primary"></i>Functional Requirements</h5>
+      </div>
+      <div class="ls-card-body">
+        <textarea name="functional_requirements" class="form-control" rows="8"
+                  placeholder="Describe the functional requirements, business needs, and acceptance criteria…">{{ project.functional_requirements or '' if project else '' }}</textarea>
+        <p class="text-muted small mt-2 mb-0">
+          <i class="bi bi-info-circle me-1"></i>
+          You can use plain text or structured lists to describe requirements.
+        </p>
+      </div>
+    </div>
+
+    <!-- Section: Technical Implementation -->
+    <div class="ls-card mb-4">
+      <div class="ls-card-header">
+        <h5><i class="bi bi-cpu me-2 text-primary"></i>Technical Implementation</h5>
+      </div>
+      <div class="ls-card-body">
+        <div class="row g-3">
+
+          <div class="col-12">
+            <label class="form-label">Technical Stack</label>
+            <input type="text" name="technical_stack" class="form-control"
+                   value="{{ project.technical_stack or '' if project else '' }}"
+                   placeholder="e.g. Python, Flask, PostgreSQL, React">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">LLM Used</label>
+            <input type="text" name="llm_used" class="form-control"
+                   value="{{ project.llm_used or '' if project else '' }}"
+                   placeholder="e.g. GPT-4o, Claude 3.5, Gemini">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Hosted On</label>
+            <select name="hosted_on" id="hostedOnSelect" class="form-select">
+              <option value="">Select hosting platform…</option>
+              {% set _hosted_val = project.hosted_on if project else '' %}
+              {% for opt in ['Azure', 'AWS', 'Google', 'Oracle', 'inhouse', 'other'] %}
+              <option value="{{ opt }}" {% if _hosted_val == opt %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6" id="hostedOnOtherWrap" style="display:none">
+            <label class="form-label">Please specify</label>
+            <input type="text" name="hosted_on_other" id="hostedOnOther" class="form-control"
+                   value="{{ project.hosted_on_other or '' if project else '' }}"
+                   placeholder="Hosting platform name">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Hosting Date</label>
+            <input type="date" name="hosting_date" class="form-control"
+                   value="{{ project.hosting_date.isoformat() if project and project.hosting_date else '' }}">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Hosting Cost (USD)</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input type="number" name="hosting_cost" class="form-control" step="0.01" min="0"
+                     value="{{ project.hosting_cost if project and project.hosting_cost else '' }}"
+                     placeholder="0.00">
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Go-live Date</label>
+            <input type="date" name="golive_date" class="form-control"
+                   value="{{ project.golive_date.isoformat() if project and project.golive_date else '' }}">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Termination Date</label>
+            <input type="date" name="termination_date" class="form-control"
+                   value="{{ project.termination_date.isoformat() if project and project.termination_date else '' }}">
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex gap-3 justify-content-end pb-4">
+      {% if project %}
+      <a href="{{ url_for('project_detail', id=project.id) }}" class="btn btn-outline-secondary px-4">
+        Cancel
+      </a>
+      <button type="submit" class="btn btn-primary fw-semibold px-4">
+        <i class="bi bi-check2 me-2"></i>Save Changes
+      </button>
+      {% else %}
+      <a href="{{ url_for('projects') }}" class="btn btn-outline-secondary px-4">
+        Cancel
+      </a>
+      <button type="submit" class="btn btn-primary fw-semibold px-4">
+        <i class="bi bi-plus-circle-fill me-2"></i>Create Project
+      </button>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var sel   = document.getElementById('hostedOnSelect');
+  var wrap  = document.getElementById('hostedOnOtherWrap');
+  var input = document.getElementById('hostedOnOther');
+
+  function toggle() {
+    var show = sel.value === 'other';
+    wrap.style.display = show ? '' : 'none';
+    input.required = show;
+  }
+
+  sel.addEventListener('change', toggle);
+  toggle();
+}());
+</script>
+{% endblock %}

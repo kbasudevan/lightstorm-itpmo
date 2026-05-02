@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Register — ITPMO{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center py-5" style="background:linear-gradient(135deg,#0F172A,#1E3A5F)">
+  <div class="container" style="max-width:480px">
+    <div class="text-center mb-4">
+      <img src="{{ url_for('static', filename='img/lightstorm-logo-white.webp') }}"
+           alt="Lightstorm" height="40"
+           style="mix-blend-mode:screen;object-fit:contain">
+      <div class="mt-3">
+        <h2 class="text-white fw-bold mb-0">ITPMO</h2>
+        <p class="text-secondary small mb-0">IT Project Management Office</p>
+      </div>
+    </div>
+
+    <div class="ls-card p-4">
+      <h5 class="fw-bold mb-1">Create Account</h5>
+      <p class="text-muted small mb-4">Join the Enterprise Architecture &amp; Product Engineering team</p>
+
+      <form method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Full Name / Username <span class="text-danger">*</span></label>
+            <input type="text" name="username" class="form-control" placeholder="John Smith" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Work Email <span class="text-danger">*</span></label>
+            <input type="email" name="email" class="form-control" placeholder="you@lightstorm.net" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Password <span class="text-danger">*</span></label>
+            <input type="password" name="password" class="form-control" placeholder="Min 8 chars" required minlength="8">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
+            <input type="password" name="confirm_password" class="form-control" placeholder="Repeat password" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Department / Team</label>
+            <select name="department" class="form-select">
+              <option value="">Select your department…</option>
+              {% for dept in ['Sales','Marketing','CEO Office','CSD','NOC','HR','Legal','Regulatory','Finance','Network Ops','Network Planning','IT','Security'] %}
+              <option value="{{ dept }}">{{ dept }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="alert alert-info d-flex align-items-start gap-2 mt-4 mb-3 py-2" style="font-size:.82rem">
+          <i class="bi bi-info-circle-fill mt-1 flex-shrink-0"></i>
+          <span>The first registered account automatically becomes an <strong>Admin</strong>. Subsequent accounts are standard users.</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">
+          <i class="bi bi-person-plus-fill me-2"></i>Create Account
+        </button>
+      </form>
+
+      <hr class="my-4">
+      <p class="text-center text-muted small mb-0">
+        Already have an account?
+        <a href="{{ url_for('login') }}" class="fw-semibold">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

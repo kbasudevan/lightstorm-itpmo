@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+{% block title %}{{ proc.code }} {{ proc.name }} — ITPMO{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div style="background:linear-gradient(135deg,var(--ls-navy),#1E3A5F);
+            border-bottom:4px solid {{ proc.color }};
+            padding:2rem 2rem 1.75rem;color:#fff">
+  <div class="container-fluid px-4">
+    <nav aria-label="breadcrumb" class="mb-2">
+      <ol class="breadcrumb mb-0" style="--bs-breadcrumb-divider-color:#94A3B8">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-secondary">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('processes') }}" class="text-secondary">Processes</a></li>
+        {% if grandparent %}
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('process_detail', code=grandparent.code) }}" class="text-secondary">{{ grandparent.code }}</a>
+        </li>
+        {% endif %}
+        {% if parent %}
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('process_detail', code=parent.code) }}" class="text-secondary">{{ parent.code }}</a>
+        </li>
+        {% endif %}
+        <li class="breadcrumb-item active text-white">{{ proc.code }}</li>
+      </ol>
+    </nav>
+    <div class="d-flex align-items-center gap-3">
+      <div style="width:56px;height:56px;border-radius:14px;background:{{ proc.color }}33;
+                  display:flex;align-items:center;justify-content:center;font-size:1.6rem">
+        <i class="bi bi-diagram-3" style="color:{{ proc.color }}"></i>
+      </div>
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+          <span class="px-2 py-1 rounded-pill small fw-bold"
+                style="background:{{ proc.color }};color:#fff">{{ proc.code }}</span>
+          <span class="badge bg-secondary">Level {{ proc.level }}</span>
+          <span class="badge" style="background:{{ proc.color }}22;color:{{ proc.color }};border:1px solid {{ proc.color }}44">
+            {{ proc.area }}
+          </span>
+        </div>
+        <h3 class="fw-bold text-white mb-1">{{ proc.name }}</h3>
+        {% if proc.description %}
+        <p class="text-secondary mb-0" style="max-width:700px">{{ proc.description }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid px-4 py-4">
+  <div class="row g-4">
+
+    <!-- Main content -->
+    <div class="col-lg-8">
+
+      {% if children %}
+      <!-- Child processes -->
+      <div class="ls-card mb-4">
+        <div class="ls-card-header">
+          <h5>
+            <i class="bi bi-diagram-2 me-2 text-primary"></i>
+            {% if proc.level == 1 %}Sub-Process Areas (L2){% else %}Processes (L3){% endif %}
+          </h5>
+          <span class="badge bg-secondary">{{ children|length }}</span>
+        </div>
+        <div class="ls-card-body p-0">
+          <table class="table table-ls mb-0">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Description</th>
+                {% if proc.level == 2 %}<th>Mappings</th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for child in children %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('process_detail', code=child.code) }}"
+                     class="text-decoration-none fw-bold small"
+                     style="color:{{ child.color }}">{{ child.code }}</a>
+                </td>
+                <td>
+                  <a href="{{ url_for('process_detail', code=child.code) }}"
+                     class="text-decoration-none text-body small">{{ child.name }}</a>
+                </td>
+                <td class="text-muted small">{{ child.description|truncate(80) if child.description else '—' }}</td>
+                {% if proc.level == 2 %}
+                <td>
+                  {% set mc = child.mappings.count() %}
+                  {% if mc > 0 %}
+                  <span class="badge rounded-pill"
+                        style="background:#EDE9FE;color:#7C3AED">{{ mc }}</span>
+                  {% else %}
+                  <span class="text-muted small">—</span>
+                  {% endif %}
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Mapped projects -->
+      <div class="ls-card">
+        <div class="ls-card-header">
+          <h5><i class="bi bi-folder2-open me-2 text-primary"></i>Mapped Projects</h5>
+          <span class="badge bg-secondary">{{ mappings|length }}</span>
+        </div>
+        <div class="ls-card-body p-0">
+          {% if mappings %}
+          <table class="table table-ls mb-0">
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Domain</th>
+                <th>Status</th>
+                <th>Compliance</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pp in mappings %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('project_detail', id=pp.project.id) }}"
+                     class="text-decoration-none fw-semibold small text-body">
+                    {{ pp.project.name }}
+                  </a>
+                  {% if proc.level != 3 %}
+                  <div class="text-muted" style="font-size:.7rem">{{ pp.process.code }} — {{ pp.process.name }}</div>
+                  {% endif %}
+                </td>
+                <td class="small text-muted">{{ pp.project.domain.name }}</td>
+                <td>
+                  <span class="status-badge status-{{ pp.project.status }}"
+                        style="font-size:.65rem;padding:.15rem .5rem">
+                    {{ STATUS_MAP[pp.project.status].label }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge rounded-pill"
+                        style="background:{{ COMPLIANCE_MAP[pp.compliance_status].color }}20;
+                               color:{{ COMPLIANCE_MAP[pp.compliance_status].color }};
+                               border:1px solid {{ COMPLIANCE_MAP[pp.compliance_status].color }}40;
+                               font-size:.7rem;font-weight:500">
+                    <i class="bi {{ COMPLIANCE_MAP[pp.compliance_status].icon }} me-1"></i>
+                    {{ COMPLIANCE_MAP[pp.compliance_status].label }}
+                  </span>
+                </td>
+                <td class="text-muted small">{{ pp.notes or '—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="empty-state py-4">
+            <i class="bi bi-folder2 d-block mb-2" style="font-size:1.8rem"></i>
+            <p class="small text-muted mb-0">No projects mapped to this process yet.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+
+      <!-- Process Info + Lightstorm fields -->
+      <div class="ls-card mb-4">
+        <div class="ls-card-header">
+          <h5><i class="bi bi-info-circle me-2 text-primary"></i>Process Info</h5>
+          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProcessModal">
+            <i class="bi bi-pencil me-1"></i>Edit
+          </button>
+        </div>
+        <div class="ls-card-body">
+          <table class="w-100" style="border-collapse:collapse">
+            <tr>
+              <td class="text-muted small py-2 pe-3" style="white-space:nowrap;width:45%">Code</td>
+              <td class="fw-bold small py-2" style="color:{{ proc.color }}">{{ proc.code }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted small py-2 pe-3">Level</td>
+              <td class="fw-semibold small py-2">L{{ proc.level }}
+                {% if proc.level == 1 %}(Area){% elif proc.level == 2 %}(Sub-area){% else %}(Process){% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted small py-2 pe-3">Area</td>
+              <td class="fw-semibold small py-2">{{ proc.area }}</td>
+            </tr>
+            {% if parent %}
+            <tr>
+              <td class="text-muted small py-2 pe-3">Parent</td>
+              <td class="small py-2">
+                <a href="{{ url_for('process_detail', code=parent.code) }}"
+                   class="text-decoration-none" style="color:{{ parent.color }}">
+                  {{ parent.code }} — {{ parent.name }}
+                </a>
+              </td>
+            </tr>
+            {% endif %}
+            <tr>
+              <td class="text-muted small py-2 pe-3">Mappings</td>
+              <td class="fw-semibold small py-2">{{ mappings|length }}</td>
+            </tr>
+          </table>
+
+          <!-- Lightstorm-specific fields -->
+          <hr class="my-3">
+          <p class="section-header mb-3">Lightstorm Details</p>
+
+          <div class="mb-3">
+            <div class="text-muted small mb-1">
+              <i class="bi bi-link-45deg me-1"></i>Process Link
+            </div>
+            {% if proc.lightstorm_process_link %}
+            <a href="{{ proc.lightstorm_process_link }}" target="_blank" rel="noopener"
+               class="small text-break d-flex align-items-center gap-1">
+              <i class="bi bi-box-arrow-up-right"></i>
+              {{ proc.lightstorm_process_link|truncate(50) }}
+            </a>
+            {% else %}
+            <span class="text-muted small fst-italic">Not set</span>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <div class="text-muted small mb-1">
+              <i class="bi bi-tag me-1"></i>Version
+            </div>
+            {% if proc.version %}
+            <span class="badge" style="background:#EDE9FE;color:#7C3AED;font-size:.8rem">
+              {{ proc.version }}
+            </span>
+            {% else %}
+            <span class="text-muted small fst-italic">Not set</span>
+            {% endif %}
+          </div>
+
+          <div>
+            <div class="text-muted small mb-1">
+              <i class="bi bi-chat-left-text me-1"></i>Comment
+            </div>
+            {% if proc.comment %}
+            <p class="small mb-0" style="line-height:1.6;white-space:pre-wrap">{{ proc.comment }}</p>
+            {% else %}
+            <span class="text-muted small fst-italic">No comments yet</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Compliance summary -->
+      {% if mappings %}
+      <div class="ls-card">
+        <div class="ls-card-header">
+          <h5><i class="bi bi-bar-chart me-2 text-primary"></i>Compliance Summary</h5>
+        </div>
+        <div class="ls-card-body">
+          {% for key, label, color, icon in COMPLIANCE_STATUSES %}
+          {% set cnt = mappings | selectattr('compliance_status', 'eq', key) | list | length %}
+          {% if cnt > 0 %}
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="small d-flex align-items-center gap-2">
+              <i class="bi {{ icon }}" style="color:{{ color }}"></i>{{ label }}
+            </span>
+            <span class="badge rounded-pill"
+                  style="background:{{ color }}20;color:{{ color }};border:1px solid {{ color }}40">
+              {{ cnt }}
+            </span>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+<!-- ====== Edit Process Modal ====== -->
+<div class="modal fade" id="editProcessModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('process_edit', code=proc.code) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">
+            <i class="bi bi-pencil me-2 text-primary"></i>Edit Process Details
+            <span class="text-muted fw-normal ms-2" style="font-size:.85rem">{{ proc.code }} — {{ proc.name }}</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-4">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-link-45deg me-1"></i>Lightstorm Process Link
+            </label>
+            <input type="url" name="lightstorm_process_link" class="form-control"
+                   placeholder="https://confluence.lightstorm.net/…"
+                   value="{{ proc.lightstorm_process_link or '' }}">
+            <div class="form-text">URL to the internal process documentation, Confluence page, or SharePoint.</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-tag me-1"></i>Version
+            </label>
+            <input type="text" name="version" class="form-control"
+                   placeholder="e.g. v2.1, R24.1"
+                   value="{{ proc.version or '' }}"
+                   style="max-width:200px">
+            <div class="form-text">Process version or release reference.</div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-chat-left-text me-1"></i>Comment
+            </label>
+            <textarea name="comment" class="form-control" rows="4"
+                      placeholder="Notes on how this process is applied at Lightstorm, exceptions, gaps…">{{ proc.comment or '' }}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary fw-semibold">
+            <i class="bi bi-check2 me-1"></i>Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

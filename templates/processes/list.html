@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}eTOM Process Framework — ITPMO{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div style="background:linear-gradient(135deg,var(--ls-navy),#1E3A5F);
+            border-bottom:4px solid #7C3AED;
+            padding:2rem 2rem 1.75rem;color:#fff">
+  <div class="container-fluid px-4">
+    <nav aria-label="breadcrumb" class="mb-2">
+      <ol class="breadcrumb mb-0" style="--bs-breadcrumb-divider-color:#94A3B8">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-secondary">Home</a></li>
+        <li class="breadcrumb-item active text-white">eTOM Processes</li>
+      </ol>
+    </nav>
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div style="width:56px;height:56px;border-radius:14px;background:#7C3AED33;
+                    display:flex;align-items:center;justify-content:center;font-size:1.6rem">
+          <i class="bi bi-diagram-3" style="color:#7C3AED"></i>
+        </div>
+        <div>
+          <h3 class="fw-bold text-white mb-1">TMForum eTOM Process Framework</h3>
+          <p class="text-secondary mb-0">Enhanced Telecom Operations Map — Level 3 compliance tracking</p>
+        </div>
+      </div>
+      {% if current_user.role == 'admin' %}
+      <a href="{{ url_for('admin_export_compliance') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-download me-1"></i>Export CSV
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid px-4 py-4">
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#EDE9FE">
+          <i class="bi bi-link-45deg" style="color:#7C3AED"></i>
+        </div>
+        <div>
+          <div class="stat-value">{{ total_mapped }}</div>
+          <div class="stat-label">Total Mappings</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#D1FAE5">
+          <i class="bi bi-check-circle-fill" style="color:#059669"></i>
+        </div>
+        <div>
+          <div class="stat-value" style="color:#059669">{{ compliant_count }}</div>
+          <div class="stat-label">Compliant</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FEE2E2">
+          <i class="bi bi-exclamation-triangle-fill" style="color:#DC2626"></i>
+        </div>
+        <div>
+          <div class="stat-value" style="color:#DC2626">{{ gap_count }}</div>
+          <div class="stat-label">Gaps</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#DBEAFE">
+          <i class="bi bi-percent" style="color:#2563EB"></i>
+        </div>
+        <div>
+          <div class="stat-value" style="color:#2563EB">
+            {{ (compliant_count / total_mapped * 100)|int if total_mapped > 0 else 0 }}%
+          </div>
+          <div class="stat-label">Compliance Rate</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Process Tree Accordion -->
+  <div class="accordion" id="processAccordion">
+    {% for l1_node in tree %}
+    {% set l1 = l1_node.process %}
+    <div class="accordion-item border-0 mb-3 rounded overflow-hidden shadow-sm">
+      <h2 class="accordion-header" id="l1head{{ loop.index }}">
+        <button class="accordion-button {% if not loop.first %}collapsed{% endif %} fw-bold"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#l1body{{ loop.index }}"
+                style="background:{{ l1.color }}18;border-left:4px solid {{ l1.color }}">
+          <span class="me-3 px-2 py-1 rounded-pill small fw-bold"
+                style="background:{{ l1.color }};color:#fff;min-width:3.5rem;text-align:center">
+            {{ l1.code }}
+          </span>
+          <span>{{ l1.name }}</span>
+          <span class="badge bg-secondary ms-auto me-2">{{ l1_node.children|length }} areas</span>
+        </button>
+      </h2>
+      <div id="l1body{{ loop.index }}"
+           class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
+           data-bs-parent="#processAccordion">
+        <div class="accordion-body p-0">
+          {% for l2_node in l1_node.children %}
+          {% set l2 = l2_node.process %}
+          <div class="border-bottom last-0">
+            <!-- L2 row -->
+            <div class="d-flex align-items-center px-4 py-2"
+                 style="background:#F8FAFC;border-left:3px solid {{ l2.color }}40">
+              <a href="{{ url_for('process_detail', code=l2.code) }}"
+                 class="text-decoration-none d-flex align-items-center gap-2 flex-grow-1">
+                <span class="small fw-bold px-2 py-0 rounded"
+                      style="background:{{ l2.color }}20;color:{{ l2.color }};min-width:3rem;text-align:center">
+                  {{ l2.code }}
+                </span>
+                <span class="fw-semibold text-body">{{ l2.name }}</span>
+              </a>
+              {% if l2_node.mapped_count > 0 %}
+              <span class="badge rounded-pill ms-2"
+                    style="background:#EDE9FE;color:#7C3AED;font-size:.7rem">
+                {{ l2_node.mapped_count }} mapping{{ 's' if l2_node.mapped_count != 1 }}
+              </span>
+              {% endif %}
+            </div>
+            <!-- L3 list -->
+            {% for l3 in l2_node.children %}
+            <div class="d-flex align-items-center px-5 py-2 border-bottom process-l3-row flex-wrap gap-2">
+              <a href="{{ url_for('process_detail', code=l3.code) }}"
+                 class="text-decoration-none d-flex align-items-center gap-2 flex-grow-1">
+                <span class="small fw-mono px-2 rounded"
+                      style="background:{{ l3.color }}15;color:{{ l3.color }};font-family:monospace;min-width:4rem;text-align:center">
+                  {{ l3.code }}
+                </span>
+                <span class="text-body small">{{ l3.name }}</span>
+              </a>
+              <div class="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
+                {% if l3.version %}
+                <span class="badge" style="background:#EDE9FE;color:#7C3AED;font-size:.65rem">
+                  {{ l3.version }}
+                </span>
+                {% endif %}
+                {% if l3.lightstorm_process_link %}
+                <a href="{{ l3.lightstorm_process_link }}" target="_blank" rel="noopener"
+                   class="text-decoration-none" title="Lightstorm Process Link">
+                  <i class="bi bi-link-45deg text-primary" style="font-size:.9rem"></i>
+                </a>
+                {% endif %}
+                {% if l3.comment %}
+                <span title="{{ l3.comment }}" data-bs-toggle="tooltip">
+                  <i class="bi bi-chat-left-text text-muted" style="font-size:.85rem"></i>
+                </span>
+                {% endif %}
+                {% set mc = l3.mappings.count() %}
+                {% if mc > 0 %}
+                <span class="badge rounded-pill"
+                      style="background:#F3F4F6;color:#374151;font-size:.65rem">
+                  {{ mc }} project{{ 's' if mc != 1 }}
+                </span>
+                {% endif %}
+                <a href="{{ url_for('process_detail', code=l3.code) }}"
+                   class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2"
+                   title="Edit">
+                  <i class="bi bi-pencil" style="font-size:.7rem"></i>
+                </a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
