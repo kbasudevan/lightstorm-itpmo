@@ -8,6 +8,12 @@ class Config:
     # container restart would invalidate all active sessions otherwise.
     SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 
+    SESSION_COOKIE_SECURE   = True   # only send cookie over HTTPS
+    SESSION_COOKIE_HTTPONLY = True   # block JavaScript from reading the cookie
+    SESSION_COOKIE_SAMESITE = 'Lax'  # block cross-site POST cookie riding
+    REMEMBER_COOKIE_SECURE   = True
+    REMEMBER_COOKIE_HTTPONLY = True
+
     SQLALCHEMY_DATABASE_URI = (
         os.environ.get('DATABASE_URL')
         or 'sqlite:///lightstorm_it.db'
@@ -28,5 +34,5 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
     ALLOWED_EXTENSIONS = {
         'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-        'png', 'jpg', 'jpeg', 'gif', 'txt', 'zip', 'csv'
+        'png', 'jpg', 'jpeg', 'gif', 'txt', 'csv'
     }

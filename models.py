@@ -18,6 +18,8 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     email_verified     = db.Column(db.Boolean, nullable=False, default=False)
     verification_token = db.Column(db.String(64), nullable=True)
+    failed_logins      = db.Column(db.Integer, nullable=False, default=0)
+    locked_until       = db.Column(db.DateTime, nullable=True)
 
     projects = db.relationship('Project', backref='creator', lazy=True,
                                foreign_keys='Project.created_by')

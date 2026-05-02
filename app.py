@@ -2,7 +2,7 @@ import os
 import uuid
 import random
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 
 from dotenv import load_dotenv
@@ -153,6 +153,17 @@ def csrf_protect():
         form_token = request.form.get('_csrf_token')
         if not token or token != form_token:
             abort(403)
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    response.headers['Server'] = 'ITPMO'
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -393,6 +404,15 @@ def login():
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         user = User.query.filter_by(email=email).first()
+
+        # Lockout check
+        if user and user.locked_until and user.locked_until > datetime.utcnow():
+            remaining = int((user.locked_until - datetime.utcnow()).total_seconds() // 60) + 1
+            flash(f'Account locked due to too many failed attempts. Try again in {remaining} minute(s).', 'danger')
+            return render_template('auth/login.html',
+                                   captcha_a=session['captcha_a'],
+                                   captcha_b=session['captcha_b'])
+
         if user and user.is_active and check_password_hash(user.password_hash, password):
             if not user.email_verified:
                 flash('Please verify your email address before signing in. '
@@ -400,10 +420,24 @@ def login():
                 return render_template('auth/login.html',
                                        captcha_a=session['captcha_a'],
                                        captcha_b=session['captcha_b'])
+            user.failed_logins = 0
+            user.locked_until = None
+            db.session.commit()
             login_user(user, remember=bool(request.form.get('remember')))
             flash(f'Welcome back, {user.username}!', 'success')
             return redirect(request.args.get('next') or url_for('index'))
-        flash('Invalid email or password.', 'danger')
+
+        if user:
+            user.failed_logins = (user.failed_logins or 0) + 1
+            if user.failed_logins >= 5:
+                user.locked_until = datetime.utcnow() + timedelta(minutes=15)
+                user.failed_logins = 0
+                flash('Too many failed attempts. Account locked for 15 minutes.', 'danger')
+            else:
+                flash(f'Invalid email or password. {5 - user.failed_logins} attempt(s) remaining.', 'danger')
+            db.session.commit()
+        else:
+            flash('Invalid email or password.', 'danger')
 
     return render_template('auth/login.html',
                            captcha_a=session.get('captcha_a', 1),
@@ -443,10 +477,16 @@ def register():
             errors.append('Passwords do not match.')
         if len(password) < 8:
             errors.append('Password must be at least 8 characters.')
+        elif not any(c.isupper() for c in password):
+            errors.append('Password must contain at least one uppercase letter.')
+        elif not any(c.isdigit() for c in password):
+            errors.append('Password must contain at least one number.')
+        elif not any(c in '!@#$%^&*()_+-=[]{}|;:,.<>?' for c in password):
+            errors.append('Password must contain at least one special character (!@#$%^&* etc.).')
         if User.query.filter_by(email=email).first():
-            errors.append('Email already registered.')
+            errors.append('An account with that email address already exists.')
         if User.query.filter_by(username=username).first():
-            errors.append('Username already taken.')
+            errors.append('That username is not available. Please choose another.')
 
         if errors:
             for e in errors:
@@ -1280,6 +1320,10 @@ def init_db():
                     _conn.execute(_sa.text('UPDATE users SET email_verified = 1'))
                 if 'verification_token' not in _user_cols:
                     _conn.execute(_sa.text('ALTER TABLE users ADD COLUMN verification_token VARCHAR(64)'))
+                if 'failed_logins' not in _user_cols:
+                    _conn.execute(_sa.text('ALTER TABLE users ADD COLUMN failed_logins INTEGER NOT NULL DEFAULT 0'))
+                if 'locked_until' not in _user_cols:
+                    _conn.execute(_sa.text('ALTER TABLE users ADD COLUMN locked_until TIMESTAMP'))
                 _conn.commit()
 
         # field_change_log is created by db.create_all() above (new table).
@@ -1317,9 +1361,10 @@ def init_db():
             db.session.commit()
             print(f'[init] {len(ETOM_PROCESSES)} eTOM processes seeded.')
 
-        # Seed default admin account if it doesn't exist yet
+        # Ensure the designated admin account exists and has admin role
         _admin_email = 'krishna.basudevan@lightstorm.net'
-        if not User.query.filter_by(email=_admin_email).first():
+        _admin = User.query.filter_by(email=_admin_email).first()
+        if not _admin:
             db.session.add(User(
                 username='krishna.basudevan',
                 email=_admin_email,
@@ -1331,6 +1376,11 @@ def init_db():
             ))
             db.session.commit()
             print(f'[init] Admin user {_admin_email} created.')
+        elif _admin.role != 'admin':
+            _admin.role = 'admin'
+            _admin.email_verified = True
+            db.session.commit()
+            print(f'[init] Admin role restored for {_admin_email}.')
 
 
 if __name__ == '__main__':
