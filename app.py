@@ -1317,6 +1317,21 @@ def init_db():
             db.session.commit()
             print(f'[init] {len(ETOM_PROCESSES)} eTOM processes seeded.')
 
+        # Seed default admin account if it doesn't exist yet
+        _admin_email = 'krishna.basudevan@lightstorm.net'
+        if not User.query.filter_by(email=_admin_email).first():
+            db.session.add(User(
+                username='krishna.basudevan',
+                email=_admin_email,
+                password_hash=generate_password_hash('Admin@2026!'),
+                role='admin',
+                department='IT',
+                is_active=True,
+                email_verified=True,
+            ))
+            db.session.commit()
+            print(f'[init] Admin user {_admin_email} created.')
+
 
 if __name__ == '__main__':
     init_db()
